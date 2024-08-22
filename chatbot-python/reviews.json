@@ -1,0 +1,34 @@
+{
+  "reviews": [
+    {
+      "professor": "Prof1",
+      "review": "Great professor, explains concepts clearly and is very approachable.",
+      "subject": "Math",
+      "stars": 5
+    },
+    {
+      "professor": "Prof2",
+      "review": "Good teaching methods, but the grading is quite strict.",
+      "subject": "Physics",
+      "stars": 4
+    },
+    {
+      "professor": "Prof3",
+      "review": "Very knowledgeable, but the lectures can be a bit dry.",
+      "subject": "Chemistry",
+      "stars": 3
+    },
+    {
+      "professor": "Prof4",
+      "review": "Amazing professor! The lectures are engaging and interactive.",
+      "subject": "Computer Science",
+      "stars": 5
+    },
+    {
+      "professor": "Prof5",
+      "review": "The professor is okay, but the exams are too difficult.",
+      "subject": "Biology",
+      "stars": 3
+    }
+  ]
+}
