@@ -17,7 +17,8 @@ pc.create_index(
 )
 
 # Load the review data
-data = json.load(open("reviews.json"))
+with open("reviews.json") as f:
+    data = json.load(f)
 
 processed_data = []
 
@@ -39,7 +40,7 @@ for professor in data["professors"]:
         processed_data.append(
             {
                 "values": embedding,
-                "id": f"{professor['name']}_{review['subject']}_{review['date']}",  # Unique ID for each review
+                "id": f"{professor['name']}_{review['subject']}_{review['date']}".replace(" ", "_"),  # Unique ID for each review, spaces replaced with underscores
                 "metadata": {
                     "professor_name": professor["name"],
                     "department": professor["department"],
@@ -53,7 +54,7 @@ for professor in data["professors"]:
                     "subject": review["subject"],
                     "date": review["date"],
                     "for_credit": review["for_credit"],
-                    "attendance": review.get("attendance", "N/A"),  # Include attendance with default value
+                    "attendance": review.get("attendance", "N/A"),  # Handle missing keys with default 'N/A'
                     "would_take_again": review["would_take_again"],
                     "grade_received": review["grade_received"],
                     "textbook_used": review["textbook_used"],

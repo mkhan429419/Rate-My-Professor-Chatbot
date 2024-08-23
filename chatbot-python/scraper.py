@@ -1,16 +1,17 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-import os
 from dotenv import load_dotenv
-from pinecone import Pinecone
+import os
 import cohere
+from pinecone import Pinecone
 
 # Load environment variables
 load_dotenv()
 
 # Initialize Pinecone
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+index = pc.Index("rag")
 
 # Initialize Cohere client
 co = cohere.Client(os.getenv('COHERE_API_KEY'))
@@ -79,10 +80,6 @@ top_tags = list(set(get_text_or_na(tag) for tag in soup.find_all('span', class_=
 reviews = []
 review_list = soup.find_all('div', class_='Rating__StyledRating-sc-1rhvpxz-1')
 
-# Prepare the data for each review
-processed_data = []
-index = pc.Index("rag")
-
 for review in review_list:
     class_name = get_text_or_na(review.find('div', class_='RatingHeader__StyledClass-sc-1dlkqw1-3'))
     date = get_text_or_na(review.find('div', class_='TimeStamp__StyledTimeStamp-sc-9q2r30-0'))
@@ -114,19 +111,37 @@ for review in review_list:
         elif 'Textbook' in label:
             textbook_used = value
 
-    # Create an embedding for the review
+    reviews.append({
+        'quality': quality_rating,
+        'difficulty': difficulty_rating,
+        'subject': class_name,
+        'date': date,
+        'for_credit': for_credit,
+        'attendance': attendance,
+        'would_take_again': would_take_again,
+        'grade_received': grade_received,
+        'textbook_used': textbook_used,
+        'review': comment,
+        'tags': review_tags
+    })
+
+# Prepare data for Pinecone and Cohere
+processed_data = []
+
+for review in reviews:
+    # Create an embedding for each review
     response = co.embed(
-        texts=[comment],
+        texts=[review['review']],
         model="embed-english-v3.0",  # Correct model for embedding
         input_type="search_document"  # Specify input type appropriate for search use-cases
     )
     embedding = response.embeddings[0]
-
+    
     # Prepare the data to be upserted into Pinecone
     processed_data.append(
         {
             "values": embedding,
-            "id": f"{professor_name}_{class_name}_{date}",  # Unique ID for each review
+            "id": f"{professor_name}_{review['subject']}_{review['date']}".replace(" ", "_"),  # Unique ID for each review, spaces replaced with underscores
             "metadata": {
                 "professor_name": professor_name,
                 "department": department,
@@ -135,30 +150,42 @@ for review in review_list:
                 "number_of_ratings": num_ratings,
                 "would_take_again_percentage": take_again,
                 "level_of_difficulty": difficulty,
-                "review_quality": quality_rating,
-                "review_difficulty": difficulty_rating,
-                "subject": class_name,
-                "date": date,
-                "for_credit": for_credit,
-                "attendance": attendance,
-                "would_take_again": would_take_again,
-                "grade_received": grade_received,
-                "textbook_used": textbook_used,
-                "review": comment,
-                "tags": review_tags
+                "review_quality": review["quality"],
+                "review_difficulty": review["difficulty"],
+                "subject": review["subject"],
+                "date": review["date"],
+                "for_credit": review["for_credit"],
+                "attendance": review.get("attendance", "N/A"),
+                "would_take_again": review["would_take_again"],
+                "grade_received": review["grade_received"],
+                "textbook_used": review["textbook_used"],
+                "review": review["review"],
+                "tags": review["tags"]
             }
         }
     )
 
-# Batch insert data to avoid limitations
-BATCH_SIZE = 100
-for i in range(0, len(processed_data), BATCH_SIZE):
-    batch = processed_data[i:i + BATCH_SIZE]
-    upsert_response = index.upsert(
-        vectors=batch,
-        namespace="ns1",
-    )
-    print(f"Upserted {len(batch)} vectors.")
+# Insert the embeddings into the Pinecone index
+upsert_response = index.upsert(
+    vectors=processed_data,
+    namespace="ns1",
+)
+print(f"Upserted count: {upsert_response['upserted_count']}")
 
-# Print index statistics
-print(index.describe_index_stats())
+# Print the JSON structure (for verification)
+professor_data = {
+    "professors": [
+        {
+            "name": professor_name,
+            "department": department,
+            "school": school_name,
+            "overall_quality": overall_rating,
+            "number_of_ratings": num_ratings,
+            "would_take_again_percentage": take_again,
+            "level_of_difficulty": difficulty,
+            "top_tags": top_tags,
+            "reviews": reviews
+        }
+    ]
+}
+print(json.dumps(professor_data, indent=4))

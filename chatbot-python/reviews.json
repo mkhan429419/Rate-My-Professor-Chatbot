@@ -1,250 +1,33 @@
 {
   "professors": [
-    {
-      "name": "Lisa Wicka",
-      "department": "Art History",
-      "school": "University of Wisconsin - Marinette",
-      "overall_quality": 3.3,
-      "number_of_ratings": 3,
-      "would_take_again_percentage": 67,
-      "level_of_difficulty": 4,
-      "top_tags": [
-        "Tough grader",
-        "Gives good feedback",
-        "Group projects",
-        "Lots of homework",
-        "Accessible outside class"
-      ],
-      "reviews": [
-        {
-          "quality": 4.0,
-          "difficulty": 4.0,
-          "subject": "ART105",
-          "date": "Dec 14th, 2021",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "Yes",
-          "grade_received": "A",
-          "textbook_used": "Yes",
-          "review": "Kind of a tough grader but she really helps you grow. If you're not an art major maybe don't mention that to her but I mean if you put in the work and she sees that, it'll pay off. The class was hybrid so I really only had to show up 1 out of the 2 days which was nice but make sure you manage your time wisely.",
-          "tags": [
-            "Gives good feedback",
-            "Accessible outside class",
-            "Tough grader"
+      {
+          "name": "SopherBaggs",
+          "department": "Englishdepartment",
+          "school": "California Pacific University",
+          "overall_quality": 4.5,
+          "number_of_ratings": 1,
+          "would_take_again_percentage": "N/A",
+          "level_of_difficulty": "N/A",
+          "top_tags": [
+              "N/A"
+          ],
+          "reviews": [
+              {
+                  "quality": 4.5,
+                  "difficulty": 3.0,
+                  "subject": "ESL8043",
+                  "date": "Aug 14th, 2012",
+                  "for_credit": "N/A",
+                  "attendance": "N/A",
+                  "would_take_again": "N/A",
+                  "grade_received": "N/A",
+                  "textbook_used": "Yes",
+                  "review": "good teeacher.  Kind.",
+                  "tags": [
+                      "N/A"
+                  ]
+              }
           ]
-        },
-        {
-          "quality": 3.0,
-          "difficulty": 4.0,
-          "subject": "ART210",
-          "date": "May 5th, 2020",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "No",
-          "grade_received": "B",
-          "textbook_used": "No",
-          "review": "The professor is knowledgeable, but the workload is heavy. The grading is quite tough and she expects a lot from students.",
-          "tags": [
-            "Tough grader",
-            "Lots of homework"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "John Doe",
-      "department": "Computer Science",
-      "school": "Massachusetts Institute of Technology",
-      "overall_quality": 4.7,
-      "number_of_ratings": 25,
-      "would_take_again_percentage": 90,
-      "level_of_difficulty": 3,
-      "top_tags": [
-        "Inspirational",
-        "Clear grading criteria",
-        "Accessible outside class"
-      ],
-      "reviews": [
-        {
-          "quality": 5.0,
-          "difficulty": 3.0,
-          "subject": "CS101",
-          "date": "Mar 10th, 2022",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "Yes",
-          "grade_received": "A+",
-          "textbook_used": "Yes",
-          "review": "Professor Doe is an excellent teacher. His lectures are engaging and he is always willing to help students outside of class. I learned a lot from his class.",
-          "tags": [
-            "Inspirational",
-            "Clear grading criteria",
-            "Accessible outside class"
-          ]
-        },
-        {
-          "quality": 4.5,
-          "difficulty": 3.0,
-          "subject": "CS201",
-          "date": "Apr 15th, 2021",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "Yes",
-          "grade_received": "A",
-          "textbook_used": "No",
-          "review": "Great professor, he makes difficult concepts easy to understand. The projects were challenging but rewarding.",
-          "tags": [
-            "Inspirational",
-            "Clear grading criteria"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Emily Smith",
-      "department": "Biology",
-      "school": "Harvard University",
-      "overall_quality": 4.2,
-      "number_of_ratings": 10,
-      "would_take_again_percentage": 85,
-      "level_of_difficulty": 4,
-      "top_tags": [
-        "Tough grader",
-        "Lots of homework",
-        "Accessible outside class"
-      ],
-      "reviews": [
-        {
-          "quality": 4.5,
-          "difficulty": 4.0,
-          "subject": "BIO150",
-          "date": "Feb 12th, 2021",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "Yes",
-          "grade_received": "A",
-          "textbook_used": "Yes",
-          "review": "Dr. Smith is tough but fair. The material is challenging, but she provides a lot of resources to help you succeed.",
-          "tags": [
-            "Tough grader",
-            "Lots of homework",
-            "Accessible outside class"
-          ]
-        },
-        {
-          "quality": 3.8,
-          "difficulty": 4.5,
-          "subject": "BIO250",
-          "date": "Nov 5th, 2020",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "Maybe",
-          "grade_received": "B+",
-          "textbook_used": "No",
-          "review": "The course was tough and required a lot of self-study. However, Dr. Smith was always available for questions and guidance.",
-          "tags": [
-            "Tough grader",
-            "Lots of homework"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Michael Johnson",
-      "department": "Physics",
-      "school": "Stanford University",
-      "overall_quality": 3.9,
-      "number_of_ratings": 15,
-      "would_take_again_percentage": 75,
-      "level_of_difficulty": 3,
-      "top_tags": [
-        "Clear grading criteria",
-        "Accessible outside class",
-        "Gives good feedback"
-      ],
-      "reviews": [
-        {
-          "quality": 4.0,
-          "difficulty": 3.0,
-          "subject": "PHY101",
-          "date": "Jan 20th, 2022",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "Yes",
-          "grade_received": "A",
-          "textbook_used": "Yes",
-          "review": "Professor Johnson explains concepts clearly and the exams are fair. He provides good feedback on assignments.",
-          "tags": [
-            "Clear grading criteria",
-            "Gives good feedback"
-          ]
-        },
-        {
-          "quality": 3.5,
-          "difficulty": 3.0,
-          "subject": "PHY201",
-          "date": "Oct 10th, 2021",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "No",
-          "grade_received": "B",
-          "textbook_used": "Yes",
-          "review": "The course was challenging but manageable. Professor Johnson is a fair grader but expects students to stay on top of the material.",
-          "tags": [
-            "Clear grading criteria",
-            "Accessible outside class"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Sarah Lee",
-      "department": "Mathematics",
-      "school": "California Institute of Technology",
-      "overall_quality": 4.8,
-      "number_of_ratings": 8,
-      "would_take_again_percentage": 95,
-      "level_of_difficulty": 2,
-      "top_tags": [
-        "Inspirational",
-        "Clear grading criteria",
-        "Gives good feedback"
-      ],
-      "reviews": [
-        {
-          "quality": 5.0,
-          "difficulty": 2.0,
-          "subject": "MATH101",
-          "date": "Sep 1st, 2021",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "Yes",
-          "grade_received": "A+",
-          "textbook_used": "Yes",
-          "review": "Professor Lee is an amazing teacher! She explains everything so clearly and makes the subject really interesting. I would definitely take her class again.",
-          "tags": [
-            "Inspirational",
-            "Clear grading criteria",
-            "Gives good feedback"
-          ]
-        },
-        {
-          "quality": 4.7,
-          "difficulty": 2.5,
-          "subject": "MATH201",
-          "date": "Dec 12th, 2020",
-          "for_credit": "Yes",
-          "attendance": "N/A",
-          "would_take_again": "Yes",
-          "grade_received": "A",
-          "textbook_used": "No",
-          "review": "Great professor, really cares about her students. The class was challenging but she provided plenty of support.",
-          "tags": [
-            "Inspirational",
-            "Gives good feedback"
-          ]
-        }
-      ]
-    }
+      }
   ]
 }
