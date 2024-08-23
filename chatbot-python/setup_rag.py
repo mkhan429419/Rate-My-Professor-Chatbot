@@ -53,6 +53,7 @@ for professor in data["professors"]:
                     "subject": review["subject"],
                     "date": review["date"],
                     "for_credit": review["for_credit"],
+                    "attendance": review.get("attendance", "N/A"),  # Include attendance with default value
                     "would_take_again": review["would_take_again"],
                     "grade_received": review["grade_received"],
                     "textbook_used": review["textbook_used"],
