@@ -1,20 +1,20 @@
 import csv
 import os
-import cohere
 import json
 import time
 from dotenv import load_dotenv
 from pinecone import Pinecone
+from sentence_transformers import SentenceTransformer
 
 # Load environment variables
 load_dotenv()
 
 # Initialize Pinecone
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-index = pc.Index("rag")
+index = pc.Index("rag2")
 
-# Initialize Cohere client
-co = cohere.Client(os.getenv('COHERE_API_KEY'))
+# Initialize Sentence Transformer model
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Path to your CSV file
 csv_file_path = 'dataset.csv'  # Update with the actual path
@@ -56,26 +56,14 @@ with open(csv_file_path, mode='r', encoding='utf-8') as file:
         # Embed and store professor's general information
         professor_info = f"{professor_name} teaches in the {department_name} department at {school_name}."
         
-        # Check the rate limit
-        while True:
-            try:
-                response = co.embed(
-                    texts=[professor_info],
-                    model="embed-english-v3.0",
-                    input_type="search_document"
-                )
-                break
-            except cohere.errors.too_many_requests_error.TooManyRequestsError:
-                print("Rate limit reached. Waiting for 60 seconds before retrying...")
-                time.sleep(60)
-
-        professor_embedding = response.embeddings[0]
+        # Generate embedding using Sentence Transformers
+        professor_embedding = model.encode(professor_info)
 
         print(f"Storing professor info: {professor_name}, {department_name}, {school_name}")
 
         index.upsert(
             vectors=[{
-                "values": professor_embedding,
+                "values": professor_embedding.tolist(),
                 "id": f"{professor_name}_info".replace(" ", "_"),
                 "metadata": {
                     "type": "professor_info",
@@ -109,24 +97,12 @@ with open(csv_file_path, mode='r', encoding='utf-8') as file:
                 'tags': clean_tags(row['tag_professor'])  # Adjust to handle tags correctly
             }
 
-            # Check the rate limit
-            while True:
-                try:
-                    response = co.embed(
-                        texts=[review_comment],
-                        model="embed-english-v3.0",
-                        input_type="search_document"
-                    )
-                    break
-                except cohere.errors.too_many_requests_error.TooManyRequestsError:
-                    print("Rate limit reached. Waiting for 60 seconds before retrying...")
-                    time.sleep(60)
-
-            review_embedding = response.embeddings[0]
+            # Generate embedding for the review using Sentence Transformers
+            review_embedding = model.encode(review_comment)
 
             index.upsert(
                 vectors=[{
-                    "values": review_embedding,
+                    "values": review_embedding.tolist(),
                     "id": f"{professor_name}_{review_data['subject']}_{review_data['date']}".replace(" ", "_"),
                     "metadata": {
                         "type": "review",

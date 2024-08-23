@@ -3,15 +3,15 @@ load_dotenv()
 from pinecone import Pinecone, ServerlessSpec
 import os
 import json
-import cohere
+from sentence_transformers import SentenceTransformer
 
 # Initialize Pinecone
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
 # Create a Pinecone index
 pc.create_index(
-    name="rag",
-    dimension=1024,  # Updated to match the embedding dimension
+    name="rag2",
+    dimension=384,  # Updated to match the embedding dimension of the model used
     metric="cosine",
     spec=ServerlessSpec(cloud="aws", region="us-east-1"),
 )
@@ -22,23 +22,18 @@ with open("reviews.json") as f:
 
 processed_data = []
 
-# Initialize Cohere client
-co = cohere.Client(os.getenv('COHERE_API_KEY'))
+# Initialize Sentence Transformer model
+model = SentenceTransformer('all-MiniLM-L6-v2')  # This model has a 384-dimensional output
 
 # Iterate through each professor and their reviews
 for professor in data["professors"]:
     # Embed professor's general information
     professor_info = f"{professor['name']} teaches in the {professor['department']} department at {professor['school']}."
-    response = co.embed(
-        texts=[professor_info],
-        model="embed-english-v3.0",
-        input_type="search_document"
-    )
-    professor_embedding = response.embeddings[0]
+    professor_embedding = model.encode(professor_info)
 
     # Store professor's general information as a vector
     processed_data.append({
-        "values": professor_embedding,
+        "values": professor_embedding.tolist(),
         "id": f"{professor['name']}_info".replace(" ", "_"),
         "metadata": {
             "type": "professor_info",
@@ -56,16 +51,11 @@ for professor in data["professors"]:
     # Iterate through the professor's reviews
     for review in professor["reviews"]:
         # Create an embedding for each review
-        response = co.embed(
-            texts=[review['review']],
-            model="embed-english-v3.0",
-            input_type="search_document"
-        )
-        review_embedding = response.embeddings[0]
+        review_embedding = model.encode(review['review'])
 
         # Store each review as a separate vector
         processed_data.append({
-            "values": review_embedding,
+            "values": review_embedding.tolist(),
             "id": f"{professor['name']}_{review['subject']}_{review['date']}".replace(" ", "_"),
             "metadata": {
                 "type": "review",
@@ -85,7 +75,7 @@ for professor in data["professors"]:
         })
 
 # Insert the embeddings into the Pinecone index
-index = pc.Index("rag")
+index = pc.Index("rag2")
 upsert_response = index.upsert(
     vectors=processed_data,
     namespace="ns1",
