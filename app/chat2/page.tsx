@@ -101,6 +101,8 @@ export default function Home() {
                 color="white"
                 borderRadius={16}
                 p={3}
+                maxWidth="80%"
+                whiteSpace="pre-wrap" // This ensures that line breaks are preserved
               >
                 {message.content}
               </Box>

@@ -30,8 +30,14 @@ export async function POST(req: NextRequest) {
     inputType: "search_query",
   });
 
-  // Assert that embeddings is of type number[][]
-  const embedding = (cohereResponse.embeddings as number[][])[0];
+  // Explicitly assert that embeddings is of type number[][]
+  const embeddings = cohereResponse.embeddings as number[][];
+
+  if (!embeddings || embeddings.length === 0) {
+    throw new Error("Failed to generate embeddings");
+  }
+
+  const embedding = embeddings[0];
 
   // Initialize Pinecone
   const pc = new Pinecone({
@@ -46,23 +52,81 @@ export async function POST(req: NextRequest) {
 
   // Query Pinecone for similar embeddings
   const results = await index.query({
-    topK: 5,
+    topK: 1000, // Increase topK to ensure you retrieve enough results
     includeMetadata: true,
     vector: embedding,
   });
 
-  // Construct the result string
-  let resultString = "";
+  // Organize results by professor
+  const professors: Record<string, any> = {};
+
   results.matches.forEach((match) => {
     if (match.metadata) {
-      resultString += `
-      Returned Results:
-      Professor: ${match.id}
-      Review: ${match.metadata.review}
-      Subject: ${match.metadata.subject}
-      Stars: ${match.metadata.stars}
-      \n\n`;
+      const professorName = match.metadata.professor_name as string;
+
+      if (!professors[professorName]) {
+        professors[professorName] = {
+          name: professorName,
+          department: "N/A",
+          school: "N/A",
+          overall_quality: "N/A",
+          number_of_ratings: "N/A",
+          would_take_again_percentage: "N/A",
+          level_of_difficulty: "N/A",
+          top_tags: [],
+          reviews: [],
+        };
+      }
+
+      if (match.metadata.type === "professor_info") {
+        // Populate professor's general information if not already set
+        professors[professorName].department = match.metadata.department || "N/A";
+        professors[professorName].school = match.metadata.school || "N/A";
+        professors[professorName].overall_quality = match.metadata.overall_quality || "N/A";
+        professors[professorName].number_of_ratings = match.metadata.number_of_ratings || "N/A";
+        professors[professorName].would_take_again_percentage = match.metadata.would_take_again_percentage || "N/A";
+        professors[professorName].level_of_difficulty = match.metadata.level_of_difficulty || "N/A";
+        professors[professorName].top_tags = Array.isArray(match.metadata.top_tags) ? match.metadata.top_tags : [];
+      }
+
+      if (match.metadata.type === "review") {
+        professors[professorName].reviews.push({
+          subject: match.metadata.subject || "N/A",
+          date: match.metadata.date || "N/A",
+          quality: match.metadata.quality || "N/A",
+          difficulty: match.metadata.difficulty || "N/A",
+          review: match.metadata.review || "N/A",
+          tags: Array.isArray(match.metadata.tags) ? match.metadata.tags : [],
+        });
+      }
     }
+  });
+
+  // Construct the result string based on the organized data
+  let resultString =
+    "Based on the provided information, the following professors are available:\n\n";
+  Object.values(professors).forEach((prof: any) => {
+    resultString += `
+    Professor: ${prof.name} (${prof.overall_quality}/5)
+    Department: ${prof.department}, ${prof.school}
+    Overall Quality: ${prof.overall_quality || "N/A"}
+    Number of Ratings: ${prof.number_of_ratings || "N/A"}
+    Would Take Again: ${prof.would_take_again_percentage || "N/A"}%
+    Level of Difficulty: ${prof.level_of_difficulty || "N/A"}
+    Top Tags: ${prof.top_tags.length > 0 ? prof.top_tags.join(", ") : "N/A"}
+
+    Reviews:
+    `;
+    prof.reviews.forEach((review: any, index: number) => {
+      resultString += `
+      ${index + 1}. Course: ${review.subject} (${review.date})
+      Review Quality: ${review.quality}
+      Review Difficulty: ${review.difficulty}
+      Review: ${review.review}
+      Tags: ${review.tags.length > 0 ? review.tags.join(", ") : "N/A"}
+      \n`;
+    });
+    resultString += "\n";
   });
 
   const lastMessage = data[data.length - 1];
@@ -98,5 +162,6 @@ export async function POST(req: NextRequest) {
       }
     },
   });
+
   return new NextResponse(stream);
 }

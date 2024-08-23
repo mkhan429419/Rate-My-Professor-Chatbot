@@ -17,7 +17,7 @@ index = pc.Index("rag")
 co = cohere.Client(os.getenv('COHERE_API_KEY'))
 
 # Define the URL of the page you want to scrape
-url = "https://www.ratemyprofessors.com/professor/1729604"  # Replace with the actual URL
+url = "https://www.ratemyprofessors.com/professor/960083"  # Replace with the actual URL
 
 # Make a GET request to fetch the raw HTML content
 response = requests.get(url)
@@ -125,35 +125,56 @@ for review in review_list:
         'tags': review_tags
     })
 
-# Prepare data for Pinecone and Cohere
-processed_data = []
+# Embed and store professor's general information
+professor_info = f"{professor_name} teaches in the {department} department at {school_name}."
+response = co.embed(
+    texts=[professor_info],
+    model="embed-english-v3.0",
+    input_type="search_document"
+)
+professor_embedding = response.embeddings[0]
 
+print(f"Storing professor info: {professor_name}, {department}, {school_name}")
+
+index.upsert(
+    vectors=[{
+        "values": professor_embedding,
+        "id": f"{professor_name}_info".replace(" ", "_"),
+        "metadata": {
+            "type": "professor_info",
+            "professor_name": professor_name,
+            "department": department,
+            "school": school_name,
+            "overall_quality": overall_rating,
+            "number_of_ratings": num_ratings,
+            "would_take_again_percentage": take_again,
+            "level_of_difficulty": difficulty,
+            "top_tags": top_tags
+        }
+    }],
+    namespace="ns1",
+)
+
+# Embed and store each review
 for review in reviews:
-    # Create an embedding for each review
     response = co.embed(
         texts=[review['review']],
-        model="embed-english-v3.0",  # Correct model for embedding
-        input_type="search_document"  # Specify input type appropriate for search use-cases
+        model="embed-english-v3.0",
+        input_type="search_document"
     )
-    embedding = response.embeddings[0]
-    
-    # Prepare the data to be upserted into Pinecone
-    processed_data.append(
-        {
-            "values": embedding,
-            "id": f"{professor_name}_{review['subject']}_{review['date']}".replace(" ", "_"),  # Unique ID for each review, spaces replaced with underscores
+    review_embedding = response.embeddings[0]
+
+    index.upsert(
+        vectors=[{
+            "values": review_embedding,
+            "id": f"{professor_name}_{review['subject']}_{review['date']}".replace(" ", "_"),
             "metadata": {
+                "type": "review",
                 "professor_name": professor_name,
-                "department": department,
-                "school": school_name,
-                "overall_quality": overall_rating,
-                "number_of_ratings": num_ratings,
-                "would_take_again_percentage": take_again,
-                "level_of_difficulty": difficulty,
-                "review_quality": review["quality"],
-                "review_difficulty": review["difficulty"],
                 "subject": review["subject"],
                 "date": review["date"],
+                "quality": review["quality"],
+                "difficulty": review["difficulty"],
                 "for_credit": review["for_credit"],
                 "attendance": review.get("attendance", "N/A"),
                 "would_take_again": review["would_take_again"],
@@ -162,15 +183,9 @@ for review in reviews:
                 "review": review["review"],
                 "tags": review["tags"]
             }
-        }
+        }],
+        namespace="ns1",
     )
-
-# Insert the embeddings into the Pinecone index
-upsert_response = index.upsert(
-    vectors=processed_data,
-    namespace="ns1",
-)
-print(f"Upserted count: {upsert_response['upserted_count']}")
 
 # Print the JSON structure (for verification)
 professor_data = {
