@@ -24,25 +24,43 @@ processed_data = []
 # Initialize Cohere client
 co = cohere.Client(os.getenv('COHERE_API_KEY'))
 
-# Create embeddings for each review using Cohere API
-for review in data["reviews"]:
-    response = co.embed(
-        texts=[review['review']],
-        model="embed-english-v3.0",  # Correct model for embedding
-        input_type="search_document"  # Specify input type appropriate for search use-cases
-    )
-    embedding = response.embeddings[0]
-    processed_data.append(
-        {
-            "values": embedding,
-            "id": review["professor"],
-            "metadata":{
-                "review": review["review"],
-                "subject": review["subject"],
-                "stars": review["stars"],
+# Iterate through each professor and their reviews
+for professor in data["professors"]:
+    for review in professor["reviews"]:
+        # Create an embedding for each review
+        response = co.embed(
+            texts=[review['review']],
+            model="embed-english-v3.0",  # Correct model for embedding
+            input_type="search_document"  # Specify input type appropriate for search use-cases
+        )
+        embedding = response.embeddings[0]
+        
+        # Prepare the data to be upserted into Pinecone
+        processed_data.append(
+            {
+                "values": embedding,
+                "id": f"{professor['name']}_{review['subject']}_{review['date']}",  # Unique ID for each review
+                "metadata": {
+                    "professor_name": professor["name"],
+                    "department": professor["department"],
+                    "school": professor["school"],
+                    "overall_quality": professor["overall_quality"],
+                    "number_of_ratings": professor["number_of_ratings"],
+                    "would_take_again_percentage": professor["would_take_again_percentage"],
+                    "level_of_difficulty": professor["level_of_difficulty"],
+                    "review_quality": review["quality"],
+                    "review_difficulty": review["difficulty"],
+                    "subject": review["subject"],
+                    "date": review["date"],
+                    "for_credit": review["for_credit"],
+                    "would_take_again": review["would_take_again"],
+                    "grade_received": review["grade_received"],
+                    "textbook_used": review["textbook_used"],
+                    "review": review["review"],
+                    "tags": review["tags"]
+                }
             }
-        }
-    )
+        )
 
 # Insert the embeddings into the Pinecone index
 index = pc.Index("rag")
