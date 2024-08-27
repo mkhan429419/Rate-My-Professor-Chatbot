@@ -17,7 +17,7 @@ You are a rate my professor agent designed to assist students with their questio
 
 export async function POST(req: NextRequest) {
   const data = await req.json();
-  const text = data[data.length - 1].content;
+  const text = data[data.length - 1].content.trim().toLowerCase();
 
   try {
     // Generate embeddings using Hugging Face Inference API
@@ -31,6 +31,11 @@ export async function POST(req: NextRequest) {
       ? (embeddingsResponse[0] as number[][]).flat()
       : (embeddingsResponse as number[]);
 
+    // Validate embedding structure
+    if (!embeddings || embeddings.length === 0) {
+      throw new Error("Invalid embeddings received from Hugging Face.");
+    }
+
     // Initialize Pinecone
     const pc = new Pinecone({
       apiKey: process.env.NEXT_PUBLIC_PINECONE_API_KEY || "",
@@ -40,11 +45,11 @@ export async function POST(req: NextRequest) {
       throw new Error("PINECONE_API_KEY is not defined");
     }
 
-    const index = pc.index("rag2").namespace("ns1");
+    const index = pc.index("rag3").namespace("ns1");
 
     // Query Pinecone for similar embeddings
     const results = await index.query({
-      topK: 40,
+      topK: 1000,
       includeMetadata: true,
       vector: embeddings,
     });

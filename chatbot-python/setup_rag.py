@@ -10,7 +10,7 @@ pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
 # Create a Pinecone index
 pc.create_index(
-    name="rag2",
+    name="rag3",
     dimension=384,  # Updated to match the embedding dimension of the model used
     metric="cosine",
     spec=ServerlessSpec(cloud="aws", region="us-east-1"),
@@ -75,7 +75,7 @@ for professor in data["professors"]:
         })
 
 # Insert the embeddings into the Pinecone index
-index = pc.Index("rag2")
+index = pc.Index("rag3")
 upsert_response = index.upsert(
     vectors=processed_data,
     namespace="ns1",

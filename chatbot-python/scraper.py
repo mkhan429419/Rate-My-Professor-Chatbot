@@ -3,21 +3,21 @@ from bs4 import BeautifulSoup
 import json
 from dotenv import load_dotenv
 import os
-import cohere
 from pinecone import Pinecone
+from sentence_transformers import SentenceTransformer
 
 # Load environment variables
 load_dotenv()
 
 # Initialize Pinecone
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-index = pc.Index("rag")
+index = pc.Index("rag3")
 
-# Initialize Cohere client
-co = cohere.Client(os.getenv('COHERE_API_KEY'))
+# Initialize SentenceTransformer model
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 # Define the URL of the page you want to scrape
-url = "https://www.ratemyprofessors.com/professor/960083"  # Replace with the actual URL
+url = "https://www.ratemyprofessors.com/professor/2501995"  # Replace with the actual URL
 
 # Make a GET request to fetch the raw HTML content
 response = requests.get(url)
@@ -127,18 +127,13 @@ for review in review_list:
 
 # Embed and store professor's general information
 professor_info = f"{professor_name} teaches in the {department} department at {school_name}."
-response = co.embed(
-    texts=[professor_info],
-    model="embed-english-v3.0",
-    input_type="search_document"
-)
-professor_embedding = response.embeddings[0]
+professor_embedding = model.encode([professor_info])[0]
 
 print(f"Storing professor info: {professor_name}, {department}, {school_name}")
 
 index.upsert(
     vectors=[{
-        "values": professor_embedding,
+        "values": professor_embedding.tolist(),  # Convert to list before upserting
         "id": f"{professor_name}_info".replace(" ", "_"),
         "metadata": {
             "type": "professor_info",
@@ -157,16 +152,11 @@ index.upsert(
 
 # Embed and store each review
 for review in reviews:
-    response = co.embed(
-        texts=[review['review']],
-        model="embed-english-v3.0",
-        input_type="search_document"
-    )
-    review_embedding = response.embeddings[0]
+    review_embedding = model.encode([review['review']])[0]
 
     index.upsert(
         vectors=[{
-            "values": review_embedding,
+            "values": review_embedding.tolist(),  # Convert to list before upserting
             "id": f"{professor_name}_{review['subject']}_{review['date']}".replace(" ", "_"),
             "metadata": {
                 "type": "review",
