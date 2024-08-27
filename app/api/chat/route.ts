@@ -13,6 +13,8 @@ const groq = new Groq({
 
 const systemPrompt = `
 You are a rate my professor agent designed to assist students with their questions about professors and classes. Use the provided data to accurately answer each question, focusing on the information available. 
+You have access to metadata such as professor name, department, school, overall quality, number of ratings, would take again percentage, level of difficulty, attendance, for credit, grade received, textbook used, review text, and tags.
+Respond to questions by providing the most relevant information based on the metadata provided.
 `;
 
 export async function POST(req: NextRequest) {
@@ -96,6 +98,10 @@ export async function POST(req: NextRequest) {
             date: match.metadata.date || "N/A",
             quality: match.metadata.quality || "N/A",
             difficulty: match.metadata.difficulty || "N/A",
+            attendance: match.metadata.attendance || "N/A", // Ensure attendance is included
+            for_credit: match.metadata.for_credit || "N/A",
+            grade_received: match.metadata.grade_received || "N/A",
+            textbook_used: match.metadata.textbook_used || "N/A",
             review: match.metadata.review || "N/A",
             tags: Array.isArray(match.metadata.tags) ? match.metadata.tags : [],
           });
@@ -122,6 +128,10 @@ export async function POST(req: NextRequest) {
         ${index + 1}. Course: ${review.subject} (${review.date})
         Review Quality: ${review.quality}
         Review Difficulty: ${review.difficulty}
+        Attendance: ${review.attendance}  // Include attendance here
+        For Credit: ${review.for_credit}  // Include for_credit here
+        Grade Received: ${review.grade_received}  // Include grade_received here
+        Textbook Used: ${review.textbook_used}  // Include textbook_used here
         Review: ${review.review}
         Tags: ${review.tags.length > 0 ? review.tags.join(", ") : "N/A"}
         \n`;
