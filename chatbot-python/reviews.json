@@ -1,33 +1,15 @@
 {
   "professors": [
-      {
-          "name": "SopherBaggs",
-          "department": "Englishdepartment",
-          "school": "California Pacific University",
-          "overall_quality": 4.5,
-          "number_of_ratings": 1,
-          "would_take_again_percentage": "N/A",
-          "level_of_difficulty": "N/A",
-          "top_tags": [
-              "N/A"
-          ],
-          "reviews": [
-              {
-                  "quality": 4.5,
-                  "difficulty": 3.0,
-                  "subject": "ESL8043",
-                  "date": "Aug 14th, 2012",
-                  "for_credit": "N/A",
-                  "attendance": "N/A",
-                  "would_take_again": "N/A",
-                  "grade_received": "N/A",
-                  "textbook_used": "Yes",
-                  "review": "good teeacher.  Kind.",
-                  "tags": [
-                      "N/A"
-                  ]
-              }
-          ]
-      }
+    {
+      "name": "SopherBaggs",
+      "department": "Englishdepartment",
+      "school": "California Pacific University",
+      "overall_quality": 4.5,
+      "number_of_ratings": 1,
+      "would_take_again_percentage": "75",
+      "level_of_difficulty": "3.2",
+      "top_tags": ["Tough Grader", "Lots of homework"],
+      "reviews": ["good teacher. kind", "amazing professor!"]
+    }
   ]
 }

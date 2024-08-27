@@ -13,8 +13,8 @@ const groq = new Groq({
 
 const systemPrompt = `
 You are a rate my professor agent designed to assist students with their questions about professors and classes. Use the provided data to accurately answer each question, focusing on the information available. 
-You have access to metadata such as professor name, department, school, overall quality, number of ratings, would take again percentage, level of difficulty, attendance, for credit, grade received, textbook used, review text, and tags.
-Respond to questions by providing the most relevant information based on the metadata provided.
+You have access to metadata such as professor name, department, school, overall quality, number of ratings, would take again percentage, level of difficulty, top tags, and reviews.
+Respond to questions by providing the most relevant information based on the metadata provided. Be aware of synonyms and variations in how users might ask questions.
 `;
 
 export async function POST(req: NextRequest) {
@@ -28,12 +28,10 @@ export async function POST(req: NextRequest) {
       inputs: text,
     });
 
-    // Ensure embeddingsResponse is of type number[][]
     const embeddings = Array.isArray(embeddingsResponse[0])
       ? (embeddingsResponse[0] as number[][]).flat()
       : (embeddingsResponse as number[]);
 
-    // Validate embedding structure
     if (!embeddings || embeddings.length === 0) {
       throw new Error("Invalid embeddings received from Hugging Face.");
     }
@@ -43,137 +41,109 @@ export async function POST(req: NextRequest) {
       apiKey: process.env.NEXT_PUBLIC_PINECONE_API_KEY || "",
     });
 
-    if (!process.env.NEXT_PUBLIC_PINECONE_API_KEY) {
-      throw new Error("PINECONE_API_KEY is not defined");
-    }
-
-    const index = pc.index("rag3").namespace("ns1");
+    const index = pc.index("rag4").namespace("ns1");
 
     // Query Pinecone for similar embeddings
     const results = await index.query({
-      topK: 1000,
+      topK: 10,
       includeMetadata: true,
       vector: embeddings,
     });
 
-    // Organize results by professor and create a response string
-    const professors: Record<string, any> = {};
+    let resultString = "Here is the relevant information:\n\n";
+
     results.matches.forEach((match) => {
-      if (match.metadata) {
-        const professorName = match.metadata.professor_name as string;
-        if (!professors[professorName]) {
-          professors[professorName] = {
-            name: professorName,
-            department: "N/A",
-            school: "N/A",
-            overall_quality: "N/A",
-            number_of_ratings: "N/A",
-            would_take_again_percentage: "N/A",
-            level_of_difficulty: "N/A",
-            top_tags: [],
-            reviews: [],
-          };
+      if (match.metadata && match.metadata.type === "professor_info") {
+        const professorInfo = match.metadata as {
+          professor_name: string;
+          department: string;
+          school: string;
+          overall_quality: number;
+          number_of_ratings: number;
+          would_take_again_percentage: string;
+          level_of_difficulty: string;
+          top_tags: string[];
+          reviews: string[];
+        };
+
+        // Dynamically generate a response based on the user's question and synonyms
+        if (
+          text.includes("name") ||
+          text.includes("who is") ||
+          text.includes("professor")
+        ) {
+          resultString += `Professor Name: ${professorInfo.professor_name}\n`;
         }
-        if (match.metadata.type === "professor_info") {
-          professors[professorName].department =
-            match.metadata.department || "N/A";
-          professors[professorName].school = match.metadata.school || "N/A";
-          professors[professorName].overall_quality =
-            match.metadata.overall_quality || "N/A";
-          professors[professorName].number_of_ratings =
-            match.metadata.number_of_ratings || "N/A";
-          professors[professorName].would_take_again_percentage =
-            match.metadata.would_take_again_percentage || "N/A";
-          professors[professorName].level_of_difficulty =
-            match.metadata.level_of_difficulty || "N/A";
-          professors[professorName].top_tags = Array.isArray(
-            match.metadata.top_tags
-          )
-            ? match.metadata.top_tags
-            : [];
+        if (
+          text.includes("department") ||
+          text.includes("faculty") ||
+          text.includes("division")
+        ) {
+          resultString += `Department: ${professorInfo.department}\n`;
         }
-        if (match.metadata.type === "review") {
-          professors[professorName].reviews.push({
-            subject: match.metadata.subject || "N/A",
-            date: match.metadata.date || "N/A",
-            quality: match.metadata.quality || "N/A",
-            difficulty: match.metadata.difficulty || "N/A",
-            attendance: match.metadata.attendance || "N/A", // Ensure attendance is included
-            for_credit: match.metadata.for_credit || "N/A",
-            grade_received: match.metadata.grade_received || "N/A",
-            textbook_used: match.metadata.textbook_used || "N/A",
-            review: match.metadata.review || "N/A",
-            tags: Array.isArray(match.metadata.tags) ? match.metadata.tags : [],
-          });
+        if (
+          text.includes("school") ||
+          text.includes("university") ||
+          text.includes("college")
+        ) {
+          resultString += `School: ${professorInfo.school}\n`;
+        }
+        if (
+          text.includes("overall quality") ||
+          text.includes("rating") ||
+          text.includes("score")
+        ) {
+          resultString += `Overall Quality: ${professorInfo.overall_quality}/5\n`;
+        }
+        if (
+          text.includes("number of ratings") ||
+          text.includes("ratings") ||
+          text.includes("reviews count")
+        ) {
+          resultString += `Number of Ratings: ${professorInfo.number_of_ratings}\n`;
+        }
+        if (
+          text.includes("would take again") ||
+          text.includes("take again") ||
+          text.includes("repeat students")
+        ) {
+          resultString += `Would Take Again: ${professorInfo.would_take_again_percentage}%\n`;
+        }
+        if (
+          text.includes("difficulty") ||
+          text.includes("level of difficulty") ||
+          text.includes("challenge")
+        ) {
+          resultString += `Level of Difficulty: ${professorInfo.level_of_difficulty}\n`;
+        }
+        if (text.includes("tags") || text.includes("top tags")) {
+          resultString += `Top Tags: ${professorInfo.top_tags.length > 0 ? professorInfo.top_tags.join(", ") : "N/A"}\n`;
+        }
+        if (text.includes("reviews") || text.includes("feedback")) {
+          resultString += `Reviews: ${professorInfo.reviews.length > 0 ? professorInfo.reviews.join(" | ") : "No reviews available"}\n`;
         }
       }
     });
 
-    let resultString =
-      "Based on the provided information, the following professors are available:\n\n";
-    Object.values(professors).forEach((prof: any) => {
-      resultString += `
-      Professor: ${prof.name} (${prof.overall_quality}/5)
-      Department: ${prof.department}, ${prof.school}
-      Overall Quality: ${prof.overall_quality || "N/A"}
-      Number of Ratings: ${prof.number_of_ratings || "N/A"}
-      Would Take Again: ${prof.would_take_again_percentage || "N/A"}%
-      Level of Difficulty: ${prof.level_of_difficulty || "N/A"}
-      Top Tags: ${prof.top_tags.length > 0 ? prof.top_tags.join(", ") : "N/A"}
+    const lastMessageContent = data[data.length - 1].content + resultString;
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...data.slice(0, data.length - 1),
+      { role: "user", content: lastMessageContent },
+    ];
 
-      Reviews:
-      `;
-      prof.reviews.forEach((review: any, index: number) => {
-        resultString += `
-        ${index + 1}. Course: ${review.subject} (${review.date})
-        Review Quality: ${review.quality}
-        Review Difficulty: ${review.difficulty}
-        Attendance: ${review.attendance}  // Include attendance here
-        For Credit: ${review.for_credit}  // Include for_credit here
-        Grade Received: ${review.grade_received}  // Include grade_received here
-        Textbook Used: ${review.textbook_used}  // Include textbook_used here
-        Review: ${review.review}
-        Tags: ${review.tags.length > 0 ? review.tags.join(", ") : "N/A"}
-        \n`;
-      });
-      resultString += "\n";
-    });
-
-    const lastMessage = data[data.length - 1];
-    const lastMessageContent = lastMessage.content + resultString;
-    const lastDataWithoutLastMessage = data.slice(0, data.length - 1);
-
-    // Use Groq for generating a chat completion based on the retrieved results
     const completion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...lastDataWithoutLastMessage,
-        { role: "user", content: lastMessageContent },
-      ],
+      messages,
       model: "llama3-8b-8192",
-      stream: true,
+      stream: false,
     });
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder();
-        try {
-          for await (const chunk of completion) {
-            const content = chunk.choices[0]?.delta?.content;
-            if (content) {
-              const text = encoder.encode(content);
-              controller.enqueue(text);
-            }
-          }
-        } catch (err) {
-          controller.error(err);
-        } finally {
-          controller.close();
-        }
-      },
-    });
+    if (completion && completion.choices && completion.choices[0]) {
+      const content = completion.choices[0].message?.content || "";
+      return new NextResponse(content);
+    }
 
-    return new NextResponse(stream);
+    throw new Error("No valid completion response received.");
   } catch (error) {
     console.error("Error during POST request:", error);
     return NextResponse.json(

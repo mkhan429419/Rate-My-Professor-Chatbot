@@ -1,37 +1,44 @@
 from dotenv import load_dotenv
-load_dotenv()
-from pinecone import Pinecone, ServerlessSpec
 import os
 import json
+from pinecone import Pinecone, ServerlessSpec
 from sentence_transformers import SentenceTransformer
+
+# Load environment variables
+load_dotenv()
 
 # Initialize Pinecone
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
-# Create a Pinecone index
+# Create a Pinecone index for RAG4
 pc.create_index(
-    name="rag3",
-    dimension=384,  # Updated to match the embedding dimension of the model used
+    name="rag4",
+    dimension=384,  # Match the embedding dimension of the model used
     metric="cosine",
     spec=ServerlessSpec(cloud="aws", region="us-east-1"),
 )
 
-# Load the review data
+# Load the review data from reviews.json
 with open("reviews.json") as f:
     data = json.load(f)
 
 processed_data = []
 
 # Initialize Sentence Transformer model
-model = SentenceTransformer('all-MiniLM-L6-v2')  # This model has a 384-dimensional output
+model = SentenceTransformer('all-MiniLM-L6-v2')  # This model outputs 384-dimensional embeddings
 
-# Iterate through each professor and their reviews
+# Iterate through each professor in the data
 for professor in data["professors"]:
-    # Embed professor's general information
-    professor_info = f"{professor['name']} teaches in the {professor['department']} department at {professor['school']}."
-    professor_embedding = model.encode(professor_info)
+    # Combine all relevant information about the professor into a single string
+    combined_info = f"{professor['name']} teaches in the {professor['department']} department at {professor['school']}. "
+    combined_info += f"Overall quality: {professor['overall_quality']}, Number of ratings: {professor['number_of_ratings']}, "
+    combined_info += f"Would take again percentage: {professor['would_take_again_percentage']}%, Level of difficulty: {professor['level_of_difficulty']}. "
+    combined_info += f"Top tags: {', '.join(professor['top_tags'])}. Reviews: {' | '.join(professor['reviews'])}"
 
-    # Store professor's general information as a vector
+    # Create an embedding for the combined information
+    professor_embedding = model.encode(combined_info)
+
+    # Store the combined information as a single vector in Pinecone
     processed_data.append({
         "values": professor_embedding.tolist(),
         "id": f"{professor['name']}_info".replace(" ", "_"),
@@ -44,38 +51,13 @@ for professor in data["professors"]:
             "number_of_ratings": professor["number_of_ratings"],
             "would_take_again_percentage": professor["would_take_again_percentage"],
             "level_of_difficulty": professor["level_of_difficulty"],
-            "top_tags": professor["top_tags"]
+            "top_tags": professor["top_tags"],
+            "reviews": professor["reviews"]
         }
     })
 
-    # Iterate through the professor's reviews
-    for review in professor["reviews"]:
-        # Create an embedding for each review
-        review_embedding = model.encode(review['review'])
-
-        # Store each review as a separate vector
-        processed_data.append({
-            "values": review_embedding.tolist(),
-            "id": f"{professor['name']}_{review['subject']}_{review['date']}".replace(" ", "_"),
-            "metadata": {
-                "type": "review",
-                "professor_name": professor["name"],
-                "subject": review["subject"],
-                "date": review["date"],
-                "quality": review["quality"],
-                "difficulty": review["difficulty"],
-                "for_credit": review["for_credit"],
-                "attendance": review.get("attendance", "N/A"),
-                "would_take_again": review["would_take_again"],
-                "grade_received": review["grade_received"],
-                "textbook_used": review["textbook_used"],
-                "review": review["review"],
-                "tags": review["tags"]
-            }
-        })
-
 # Insert the embeddings into the Pinecone index
-index = pc.Index("rag3")
+index = pc.Index("rag4")
 upsert_response = index.upsert(
     vectors=processed_data,
     namespace="ns1",
