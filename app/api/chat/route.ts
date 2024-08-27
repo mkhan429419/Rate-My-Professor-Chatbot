@@ -14,7 +14,7 @@ const groq = new Groq({
 const systemPrompt = `
 You are a rate my professor agent designed to assist students with their questions about professors and classes. Use the provided data to accurately answer each question, focusing on the information available. 
 You have access to metadata such as professor name, department, school, overall quality, number of ratings, would take again percentage, level of difficulty, top tags, and reviews.
-Respond to questions by providing the most relevant information based on the metadata provided. Be aware of synonyms and variations in how users might ask questions.
+Respond to questions by providing the most relevant information based on the metadata provided.
 `;
 
 export async function POST(req: NextRequest) {
@@ -50,82 +50,35 @@ export async function POST(req: NextRequest) {
       vector: embeddings,
     });
 
-    let resultString = "Here is the relevant information:\n\n";
+    // Process the results and structure the response
+    let resultString = "Based on the provided information, the following professors are available:\n\n";
 
     results.matches.forEach((match) => {
-      if (match.metadata && match.metadata.type === "professor_info") {
-        const professorInfo = match.metadata as {
-          professor_name: string;
-          department: string;
-          school: string;
-          overall_quality: number;
-          number_of_ratings: number;
-          would_take_again_percentage: string;
-          level_of_difficulty: string;
-          top_tags: string[];
-          reviews: string[];
-        };
+      if (match.metadata) {
+        const professorName = match.metadata.professor_name as string;
+        const overallQuality = match.metadata.overall_quality as number;
+        const numberOfRatings = match.metadata.number_of_ratings as number;
+        const wouldTakeAgainPercentage = match.metadata.would_take_again_percentage as string;
+        const levelOfDifficulty = match.metadata.level_of_difficulty as string;
+        const topTags = match.metadata.top_tags as string[];
+        const reviews = match.metadata.reviews as string[];
 
-        // Dynamically generate a response based on the user's question and synonyms
-        if (
-          text.includes("name") ||
-          text.includes("who is") ||
-          text.includes("professor")
-        ) {
-          resultString += `Professor Name: ${professorInfo.professor_name}\n`;
-        }
-        if (
-          text.includes("department") ||
-          text.includes("faculty") ||
-          text.includes("division")
-        ) {
-          resultString += `Department: ${professorInfo.department}\n`;
-        }
-        if (
-          text.includes("school") ||
-          text.includes("university") ||
-          text.includes("college")
-        ) {
-          resultString += `School: ${professorInfo.school}\n`;
-        }
-        if (
-          text.includes("overall quality") ||
-          text.includes("rating") ||
-          text.includes("score")
-        ) {
-          resultString += `Overall Quality: ${professorInfo.overall_quality}/5\n`;
-        }
-        if (
-          text.includes("number of ratings") ||
-          text.includes("ratings") ||
-          text.includes("reviews count")
-        ) {
-          resultString += `Number of Ratings: ${professorInfo.number_of_ratings}\n`;
-        }
-        if (
-          text.includes("would take again") ||
-          text.includes("take again") ||
-          text.includes("repeat students")
-        ) {
-          resultString += `Would Take Again: ${professorInfo.would_take_again_percentage}%\n`;
-        }
-        if (
-          text.includes("difficulty") ||
-          text.includes("level of difficulty") ||
-          text.includes("challenge")
-        ) {
-          resultString += `Level of Difficulty: ${professorInfo.level_of_difficulty}\n`;
-        }
-        if (text.includes("tags") || text.includes("top tags")) {
-          resultString += `Top Tags: ${professorInfo.top_tags.length > 0 ? professorInfo.top_tags.join(", ") : "N/A"}\n`;
-        }
-        if (text.includes("reviews") || text.includes("feedback")) {
-          resultString += `Reviews: ${professorInfo.reviews.length > 0 ? professorInfo.reviews.join(" | ") : "No reviews available"}\n`;
-        }
+        resultString += `
+        Professor: ${professorName} (${overallQuality}/5)
+        Department: ${match.metadata.department || "N/A"}, ${match.metadata.school || "N/A"}
+        Overall Quality: ${overallQuality || "N/A"}
+        Number of Ratings: ${numberOfRatings || "N/A"}
+        Would Take Again: ${wouldTakeAgainPercentage || "N/A"}%
+        Level of Difficulty: ${levelOfDifficulty || "N/A"}
+        Top Tags: ${Array.isArray(topTags) && topTags.length > 0 ? topTags.join(", ") : "N/A"}
+
+        Reviews:
+        ${Array.isArray(reviews) && reviews.length > 0 ? reviews.join(" | ") : "No reviews available."}
+        `;
       }
     });
 
-    const lastMessageContent = data[data.length - 1].content + resultString;
+    const lastMessageContent = data[data.length - 1].content + "\n" + resultString;
     const messages = [
       { role: "system", content: systemPrompt },
       ...data.slice(0, data.length - 1),
@@ -135,7 +88,7 @@ export async function POST(req: NextRequest) {
     const completion = await groq.chat.completions.create({
       messages,
       model: "llama3-8b-8192",
-      stream: false,
+      stream: false, // Switch to non-streaming for simpler debugging
     });
 
     if (completion && completion.choices && completion.choices[0]) {
