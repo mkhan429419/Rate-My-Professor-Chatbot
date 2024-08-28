@@ -1,11 +1,16 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Send } from "react-feather";
+import { Send, PlusCircle, Trash2, User } from "react-feather";
 import LoadingDots from "@/components/LoadingDots";
+import icon from "@/public/assistant-avatar.png";
+import Image from "next/image";
+import UrlInputModal from "@/components/InputModal";
 
 export default function Home() {
   const [message, setMessage] = useState<string>("");
-  const [history, setHistory] = useState<Array<{ role: string; content: string }>>([
+  const [history, setHistory] = useState<
+    Array<{ role: string; content: string }>
+  >([
     {
       role: "assistant",
       content: `Hi! I'm the Rate My Professor support assistant. How can I help you today?`,
@@ -14,25 +19,27 @@ export default function Home() {
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   };
 
   const sendMessage = async () => {
-    if (!message.trim()) return; // prevent sending empty messages
+    if (!message.trim()) return;
 
     const newHistory = [
       ...history,
       { role: "user", content: message },
-      { role: "assistant", content: "" }, // empty message to be updated
+      { role: "assistant", content: "" },
     ];
 
-    setMessage(""); // clear the input
-    setHistory(newHistory); // update the history state
-    setLoading(true); // show loading spinner
+    setMessage("");
+    setHistory(newHistory);
+    setLoading(true);
 
     scrollToBottom();
 
@@ -66,7 +73,8 @@ export default function Home() {
 
         setHistory((oldHistory) => {
           const updatedHistory = [...oldHistory];
-          updatedHistory[updatedHistory.length - 1].content = result; // update the last message
+          updatedHistory[updatedHistory.length - 1].content =
+            formatResponse(result);
           return updatedHistory;
         });
 
@@ -88,16 +96,34 @@ export default function Home() {
         },
       ]);
     } finally {
-      setLoading(false); // hide loading spinner
+      setLoading(false);
     }
   };
 
-  const formatPageName = (url: string) => {
-    const pageName = url.split("/").pop();
-    if (pageName) {
-      const formattedName = pageName.split("-").join(" ");
-      return formattedName.charAt(0).toUpperCase() + pageName.slice(1);
-    }
+  const formatResponse = (text: string) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n/g, "<br/>")
+      .replace(/\d+\.\s(.*?)(?=\d+\.|$)/g, "<p>$1</p>")
+      .replace(
+        /(?:^|\n)([^:]+):(.*?)(\n|$)/g,
+        "<p><strong>$1:</strong>$2</p>"
+      );
+  };
+
+  const clearChat = () => {
+    setHistory([
+      {
+        role: "assistant",
+        content: `Hi! I'm the Rate My Professor support assistant. How can I help you today?`,
+      },
+    ]);
+  };
+
+  const handleSaveUrl = (url: string) => {
+    console.log("URL Saved:", url);
+    // You can add your scraping logic here
+    setModalOpen(false);
   };
 
   useEffect(() => {
@@ -107,14 +133,40 @@ export default function Home() {
   return (
     <main className="h-screen bg-white flex flex-col">
       <div className="flex flex-col gap-8 w-full items-center flex-grow max-h-full">
-        <h1 className="text-4xl text-transparent font-extralight bg-clip-text bg-gradient-to-r from-violet-800 to-fuchsia-500 mt-6">
-          Rate My Professor Chat
-        </h1>
-        <div className="rounded-2xl border-purple-700 border-opacity-5 border lg:w-3/4 flex-grow flex flex-col bg-[url('/images/bg.png')] bg-cover max-h-full overflow-hidden">
+        {/* Header with buttons */}
+        <div className="flex justify-between items-center w-full lg:w-3/4 mt-6 px-4">
+          <h1 className="text-3xl text-transparent font-extralight bg-clip-text bg-gradient-to-r from-violet-800 to-fuchsia-500">
+            Rate My Professor Chat
+          </h1>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-2 text-violet-600 hover:text-violet-800"
+            >
+              <PlusCircle size={20} />
+              <span>Add URL</span>
+            </button>
+            <button
+              onClick={clearChat}
+              className="flex items-center gap-2 text-red-600 hover:text-red-800"
+            >
+              <Trash2 size={20} />
+              <span>Clear Chat</span>
+            </button>
+            <button
+              onClick={() => alert("Profile functionality not implemented")}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              <User size={24} />
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border-purple-700 border-opacity-5 border lg:w-3/4 flex-grow flex flex-col bg-[url('/bgm.png')] bg-cover max-h-full overflow-hidden">
           <div
             ref={chatContainerRef}
             className="overflow-y-auto flex flex-col gap-5 p-10"
-            style={{ height: "calc(100% - 140px)", paddingBottom: "24px" }} // Adjusted height and added more padding bottom
+            style={{ height: "calc(100% - 96px)" }}
           >
             {history.map((message, idx) => {
               const isLastMessage = idx === history.length - 1;
@@ -126,15 +178,21 @@ export default function Home() {
                       key={idx}
                       className="flex gap-2"
                     >
-                      <img
-                        src="images/assistant-avatar.png"
+                      <Image
+                        alt="ai icon"
+                        src={icon}
                         className="h-12 w-12 rounded-full"
                       />
                       <div className="w-auto max-w-xl break-words bg-white rounded-b-xl rounded-tr-xl text-black p-6 shadow-[0_10px_40px_0px_rgba(0,0,0,0.15)]">
                         <p className="text-sm font-medium text-violet-500 mb-2">
                           AI assistant
                         </p>
-                        {message.content || (loading && <LoadingDots />)}
+                        <div
+                          className="formatted-content"
+                          dangerouslySetInnerHTML={{
+                            __html: message.content,
+                          }}
+                        />
                       </div>
                     </div>
                   );
@@ -155,8 +213,7 @@ export default function Home() {
             })}
           </div>
 
-          {/* input area */}
-          <div className="flex sticky bottom-4 w-full px-6 pb-6 h-24 bg-white">
+          <div className="flex sticky bottom-4 w-full px-6 pb-6 h-24 bg-transparent">
             <div className="w-full relative">
               <textarea
                 aria-label="chat input"
@@ -187,6 +244,13 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Modal Component */}
+      <UrlInputModal
+        isOpen={isModalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveUrl}
+      />
     </main>
   );
 }

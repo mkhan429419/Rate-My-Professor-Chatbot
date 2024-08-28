@@ -1,3 +1,4 @@
+import sys
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -11,13 +12,17 @@ load_dotenv()
 
 # Initialize Pinecone
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-index = pc.Index("rag4")  # Updated to match the new index name
+index = pc.Index("rag4")
 
 # Initialize SentenceTransformer model
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
-# Define the URL of the page you want to scrape
-url = "https://www.ratemyprofessors.com/professor/1256845"  # Replace with the actual URL
+# Get the URL from the command line arguments
+if len(sys.argv) > 1:
+    url = sys.argv[1]
+else:
+    print("Error: No URL provided")
+    sys.exit(1)
 
 # Make a GET request to fetch the raw HTML content
 response = requests.get(url)
@@ -26,18 +31,16 @@ html_content = response.text
 # Parse the HTML content with BeautifulSoup
 soup = BeautifulSoup(html_content, 'html.parser')
 
-# Helper function to extract text safely
+# Helper functions (same as before)
 def get_text_or_na(soup_element):
     return soup_element.get_text(strip=True) if soup_element else 'N/A'
 
-# Helper function to convert to int or return 'N/A'
 def safe_int(value):
     try:
         return int(value)
     except (ValueError, TypeError):
         return 'N/A'
 
-# Helper function to convert to float or return 'N/A'
 def safe_float(value):
     try:
         return float(value)
