@@ -226,12 +226,17 @@ export default function Home() {
                         <p className="text-sm font-medium text-violet-500 mb-2">
                           AI assistant
                         </p>
-                        <div
-                          className="formatted-content"
-                          dangerouslySetInnerHTML={{
-                            __html: message.content,
-                          }}
-                        />
+                        <div className="formatted-content">
+                          {loading && isLastMessage ? (
+                            <LoadingDots />
+                          ) : (
+                            <div
+                              dangerouslySetInnerHTML={{
+                                __html: message.content,
+                              }}
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
