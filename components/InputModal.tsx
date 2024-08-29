@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X } from "react-feather";
+import { useToast } from "@/components/ui/use-toast";
 
 interface UrlInputModalProps {
   isOpen: boolean;
@@ -14,7 +15,7 @@ const UrlInputModal: React.FC<UrlInputModalProps> = ({
 }) => {
   const [url, setUrl] = useState("");
   const [isValidUrl, setIsValidUrl] = useState<boolean | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const validateUrl = (inputUrl: string) => {
     const regex = /^https:\/\/www\.ratemyprofessors\.com\/professor\/\d+$/;
@@ -39,13 +40,25 @@ const UrlInputModal: React.FC<UrlInputModalProps> = ({
         });
 
         if (response.ok) {
-          setStatusMessage("Professor data has been successfully added!");
+          toast({
+            title: "Success",
+            description: "Professor data has been successfully added!",
+            variant: "default",  // Changed from "success" to "default"
+          });
         } else {
-          setStatusMessage("Failed to add professor data.");
+          toast({
+            title: "Failed",
+            description: "Failed to add professor data.",
+            variant: "destructive",  // Changed from "error" to "destructive"
+          });
         }
       } catch (error) {
         console.error("Error:", error);
-        setStatusMessage("An error occurred while saving the professor data.");
+        toast({
+          title: "Error",
+          description: "An error occurred while saving the professor data.",
+          variant: "destructive",  // Changed from "error" to "destructive"
+        });
       }
     }
   };
@@ -97,10 +110,6 @@ const UrlInputModal: React.FC<UrlInputModalProps> = ({
             <p className="text-green-600 text-sm mt-2">This is a valid URL!</p>
           )}
         </div>
-
-        {statusMessage && (
-          <p className="text-sm mt-2 text-gray-700">{statusMessage}</p>
-        )}
 
         <div className="flex justify-end gap-4">
           <button
