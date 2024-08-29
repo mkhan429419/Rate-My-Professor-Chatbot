@@ -16,6 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 
 export default function Home() {
+  // prod update
   const { user, isSignedIn } = useUser();
   const { signOut } = useAuth();
   const router = useRouter();
