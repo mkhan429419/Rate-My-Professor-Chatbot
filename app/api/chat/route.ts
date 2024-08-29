@@ -43,12 +43,20 @@ export async function POST(req: NextRequest) {
 
     const index = pc.index("rag4").namespace("ns1");
 
+    console.log("Querying Pinecone with embeddings:", embeddings);
+
     // Query Pinecone for similar embeddings
     const results = await index.query({
       topK: 10,
       includeMetadata: true,
       vector: embeddings,
     });
+
+    console.log("Pinecone query results:", results);
+
+    if (!results.matches || results.matches.length === 0) {
+      return NextResponse.json({ content: "No relevant professors found." });
+    }
 
     // Process the results and structure the response
     let resultString = "Based on the provided information, the following professors are available:\n\n";
