@@ -2,6 +2,8 @@
 
 Welcome to **Profeval**, a cutting-edge AI chatbot designed to simplify your search for the perfect professor! With Profeval, you can access detailed evaluations, ratings, and reviews of professors, all powered by advanced AI technology.
 
+![Profeval](image.png)
+
 ## 📺 Watch the Demo
 
 See Profeval in action on YouTube: [YouTube Demo](https://lnkd.in/dtYQPaCz)
