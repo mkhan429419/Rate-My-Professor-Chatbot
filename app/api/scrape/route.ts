@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
-import { CohereClient } from "cohere-ai";
 import { Pinecone, PineconeRecord } from "@pinecone-database/pinecone";
+import { HfInference } from "@huggingface/inference";
+
+// Initialize Hugging Face Inference API client with the correct API key
+const hf = new HfInference(process.env.NEXT_PUBLIC_HUGGINGFACE_API_KEY);
 
 export async function POST(request: Request) {
   const { url } = await request.json();
@@ -65,14 +68,14 @@ export async function POST(request: Request) {
       ).map((review) => review.textContent?.trim() || "N/A");
 
       return {
-        professorName: professorName.replace(/\s+/g, "").toLowerCase(),
-        department: department.replace(/\s+/g, "").toLowerCase(),
-        schoolName: schoolName.toLowerCase(),
-        overallRating,
-        numRatings: parseInt(numRatings) || "N/A",
+        professorName: professorName.trim(),
+        department: department.trim(),
+        schoolName: schoolName.trim(),
+        overallRating: overallRating.trim(),
+        numRatings: numRatings !== "N/A" ? parseInt(numRatings) : "N/A",
         takeAgain: takeAgain !== "N/A" ? parseInt(takeAgain) : "N/A",
         difficulty: difficulty !== "N/A" ? parseFloat(difficulty) : "N/A",
-        tags: tags.length > 0 ? tags.map(tag => tag.toLowerCase()) : ["N/A"],
+        tags: tags.length > 0 ? tags.map(tag => tag.trim()) : ["N/A"],
         reviews: reviews.length > 0 ? reviews : ["N/A"],
       };
     });
@@ -94,25 +97,18 @@ export async function POST(request: Request) {
       ", "
     )}. Reviews: ${professorData.reviews.join(" | ")}`;
 
-    // Initialize Cohere client with the API key
-    const cohereClient = new CohereClient({
-      token: process.env.NEXT_PUBLIC_COHERE_API_KEY!,
+    // Generate embeddings using Hugging Face Inference API
+    const embeddingsResponse = await hf.featureExtraction({
+      model: "sentence-transformers/all-MiniLM-L6-v2",
+      inputs: combinedInfo,
     });
 
-    // Get embeddings from Cohere
-    const response = await cohereClient.embed({
-      texts: [combinedInfo],
-      model: "embed-english-light-v3.0", // This model generates embeddings with a dimension of 384
-      inputType: "search_document", // or "classification", "clustering", depending on your use case
-    });
+    const embeddings = Array.isArray(embeddingsResponse[0])
+      ? (embeddingsResponse[0] as number[][]).flat()
+      : (embeddingsResponse as number[]);
 
-    // Cast the embeddings to an array of numbers
-    const embeddings = response.embeddings as number[][];
-
-    const embedding = embeddings[0]; // Access the first embedding
-
-    if (!embedding || !Array.isArray(embedding)) {
-      throw new Error("Failed to get embeddings from Cohere");
+    if (!embeddings || embeddings.length === 0) {
+      throw new Error("Invalid embeddings received from Hugging Face.");
     }
 
     // Initialize Pinecone client
@@ -123,8 +119,8 @@ export async function POST(request: Request) {
 
     // Store the combined information as a single vector in Pinecone
     const record: PineconeRecord = {
-      id: `${professorData.professorName}_info`,
-      values: embedding,
+      id: `${professorData.professorName.replace(/\s+/g, "_")}_info`,
+      values: embeddings,
       metadata: {
         type: "professor_info",
         professor_name: professorData.professorName,
