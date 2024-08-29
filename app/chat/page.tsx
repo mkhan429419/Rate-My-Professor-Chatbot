@@ -1,12 +1,37 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Send, PlusCircle, Trash2, User } from "react-feather";
+import { Send, PlusCircle, Trash2 } from "react-feather";
 import LoadingDots from "@/components/LoadingDots";
 import icon from "@/public/assistant-avatar.png";
 import Image from "next/image";
 import UrlInputModal from "@/components/InputModal";
+import {
+  useUser,
+  SignedIn,
+  SignedOut,
+  UserButton,
+  SignInButton,
+  useAuth,
+} from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const { user, isSignedIn } = useUser();
+  const { signOut } = useAuth();
+  const router = useRouter();
+
+  // Redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (!isSignedIn) {
+      router.push("/sign-in");
+    }
+  }, [isSignedIn, router]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/sign-in");
+  };
+
   const [message, setMessage] = useState<string>("");
   const [history, setHistory] = useState<
     Array<{ role: string; content: string }>
@@ -20,6 +45,24 @@ export default function Home() {
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserHistory(user.id);
+    }
+  }, [user]);
+
+  const fetchUserHistory = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/chat/history?userId=${userId}`);
+      const data = await response.json();
+      if (data.history) {
+        setHistory(data.history);
+      }
+    } catch (error) {
+      console.error("Failed to fetch user history:", error);
+    }
+  };
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
@@ -105,10 +148,7 @@ export default function Home() {
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
       .replace(/\n/g, "<br/>")
       .replace(/\d+\.\s(.*?)(?=\d+\.|$)/g, "<p>$1</p>")
-      .replace(
-        /(?:^|\n)([^:]+):(.*?)(\n|$)/g,
-        "<p><strong>$1:</strong>$2</p>"
-      );
+      .replace(/(?:^|\n)([^:]+):(.*?)(\n|$)/g, "<p><strong>$1:</strong>$2</p>");
   };
 
   const clearChat = () => {
@@ -122,7 +162,6 @@ export default function Home() {
 
   const handleSaveUrl = (url: string) => {
     console.log("URL Saved:", url);
-    // You can add your scraping logic here
     setModalOpen(false);
   };
 
@@ -133,7 +172,6 @@ export default function Home() {
   return (
     <main className="h-screen bg-white flex flex-col">
       <div className="flex flex-col gap-8 w-full items-center flex-grow max-h-full">
-        {/* Header with buttons */}
         <div className="flex justify-between items-center w-full lg:w-3/4 mt-6 px-4">
           <h1 className="text-3xl text-transparent font-extralight bg-clip-text bg-gradient-to-r from-violet-800 to-fuchsia-500">
             Rate My Professor Chat
@@ -153,12 +191,12 @@ export default function Home() {
               <Trash2 size={20} />
               <span>Clear Chat</span>
             </button>
-            <button
-              onClick={() => alert("Profile functionality not implemented")}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              <User size={24} />
-            </button>
+            <SignedOut>
+              <SignInButton />
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
           </div>
         </div>
 
@@ -245,7 +283,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Modal Component */}
       <UrlInputModal
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}

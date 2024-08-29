@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/toast";
 import { Toaster } from "@/components/ui/toaster";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,13 +18,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ToastProvider>
-          {children}
-          <Toaster /> {/* Removed unsupported props */}
-        </ToastProvider>
-      </body>
-    </html>
+    <ClerkProvider appearance={{
+      
+    }}>
+      <html lang="en">
+        <body className={inter.className}>
+          <ToastProvider>
+            {children}
+            <Toaster /> {/* Removed unsupported props */}
+          </ToastProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
