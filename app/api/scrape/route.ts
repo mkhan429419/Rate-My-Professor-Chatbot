@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import puppeteer from "puppeteer";
+import chromium from 'chrome-aws-lambda';
+import puppeteer from 'puppeteer-core';
 import { Pinecone, PineconeRecord } from "@pinecone-database/pinecone";
 import { HfInference } from "@huggingface/inference";
 
@@ -14,15 +15,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Launch Puppeteer
+    // Launch Puppeteer with chrome-aws-lambda
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true,
     });
+
     const page = await browser.newPage();
 
     // Navigate to the provided URL
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 90000 });
 
     // Extract data using Puppeteer
     const professorData = await page.evaluate(() => {
